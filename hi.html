@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Morse Talkie</title>
+  <style>
+    body {
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 2em;
+    }
+
+    .tab {
+      display: none;
+    }
+
+    .tab.active {
+      display: block;
+    }
+
+    .nav-button {
+      background: linear-gradient(144deg,#AF40FF, #5B42F3 50%,#00DDEB);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      padding: 12px 20px;
+      margin: 10px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .output {
+      margin-top: 1em;
+      font-size: 1.5em;
+      color: #0f0;
+      font-weight: bold;
+      text-shadow: 0 0 5px #0f0;
+    }
+
+    .chart {
+      margin-top: 3em;
+      width: 50%;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 221, 235, 0.3);
+    }
+
+    .button-64 {
+      background: linear-gradient(144deg,#AF40FF, #5B42F3 50%,#00DDEB);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      padding: 16px 24px;
+      margin: 10px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    select {
+      background-color: #05062d;
+      color: white;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 18px;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📡 Morse Talkie</h1>
+
+  <!-- Navigation -->
+  <div>
+    <button class="nav-button" onclick="showTab('input')">Input</button>
+    <button class="nav-button" onclick="showTab('receive')">Receive</button>
+  </div>
+
+  <!-- Input Tab -->
+  <div id="input" class="tab active">
+    <label for="channel">Choose a Channel:</label><br>
+    <select id="channel">
+      <option value="Alpha">Alpha</option>
+      <option value="Bravo">Bravo</option>
+      <option value="Charlie">Charlie</option>
+      <option value="Delta">Delta</option>
+      <option value="Echo">Echo</option>
+      <option value="Foxtrot">Foxtrot</option>
+      <option value="Golf">Golf</option>
+      <option value="Hotel">Hotel</option>
+      <option value="India">India</option>
+      <option value="Juliet">Juliet</option>
+    </select>
+
+    <div>
+      <button class="button-64" onclick="addDot()">Dot (·)</button>
+      <button class="button-64" onclick="addDash()">Dash (–)</button>
+      <button class="button-64" onclick="addSpace()">Space</button>
+      <button class="button-64" onclick="addNextWord()">Next Word</button>
+    </div>
+
+    <div>
+      <button class="button-64" onclick="send()">Send</button>
+      <button class="button-64" onclick="clearMessage()">Clear</button>
+    </div>
+
+    <div class="output" id="inputOutput"></div>
+    <div class="output" id="liveTranslation"></div>
+  </div>
+
+  <!-- Receive Tab -->
+  <div id="receive" class="tab">
+    <div class="output" id="receiveOutput"></div>
+    <div class="output" id="receiveTranslation"></div>
+  </div>
+
+  <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmXrZTk-IHO_h3wZPNIDIlloKseQ0m7twIhQ&s" alt="Morse Code Chart" class="chart" />
+
+  <script>
+    let message = '';
+
+    const morseToChar = {
+      '.-': 'A', '-...': 'B', '-.-.': 'C', '-..': 'D', '.': 'E',
+      '..-.': 'F', '--.': 'G', '....': 'H', '..': 'I', '.---': 'J',
+      '-.-': 'K', '.-..': 'L', '--': 'M', '-.': 'N', '---': 'O',
+      '.--.': 'P', '--.-': 'Q', '.-.': 'R', '...': 'S', '-': 'T',
+      '..-': 'U', '...-': 'V', '.--': 'W', '-..-': 'X', '-.--': 'Y',
+      '--..': 'Z',
+      '-----': '0', '.----': '1', '..---': '2', '...--': '3',
+      '....-': '4', '.....': '5', '-....': '6', '--...': '7',
+      '---..': '8', '----.': '9'
+    };
+
+    function decodeMorse(morse) {
+      const parts = morse.trim().split(' ');
+      let result = '';
+      for (let i = 0; i < parts.length; i++) {
+        const code = parts[i];
+        if (code === '') {
+          // Check for double space (word break)
+          if (parts[i - 1] === '') {
+            result += ' ';
+          }
+        } else {
+          result += morseToChar[code] || '?';
+        }
+      }
+      return result;
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+
+      if (tabId === 'receive') {
+        const channel = localStorage.getItem('lastChannel');
+        const msg = localStorage.getItem('lastMessage');
+        if (msg) {
+          document.getElementById('receiveOutput').innerText = `📡 Incoming transmission on ${channel}:\n${msg}`;
+          document.getElementById('receiveTranslation').innerText = `Decoded Message: ${decodeMorse(msg)}`;
+        } else {
+          document.getElementById('receiveOutput').innerText = `📡 Incoming transmission on ${channel}...\nAwaiting signal...`;
+          document.getElementById('receiveTranslation').innerText = '';
+        }
+      }
+    }
+
+    function addDot() {
+      message += '.';
+      updateDisplay();
+    }
+
+    function addDash() {
+      message += '-';
+      updateDisplay();
+    }
+
+    function addSpace() {
+      message += ' ';
+      updateDisplay();
+    }
+
+    function addNextWord() {
+      message += '  '; // Double space for word break
+      updateDisplay();
+    }
+
+    function clearMessage() {
+      message = '';
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      document.getElementById('inputOutput').innerText = `Current Morse: ${message}`;
+      const translation = decodeMorse(message);
+      document.getElementById('liveTranslation').innerText = `Live Translation: ${translation}`;
+      console.log('Raw Morse:', message); // Optional debug
+    }
+
+    function send() {
+      const channel = document.getElementById('channel').value;
+      localStorage.setItem('lastChannel', channel);
+      localStorage.setItem('lastMessage', message);
+      message = '';
+      updateDisplay();
+      showTab('receive');
+    }
+  </script>
+</body>
+</html>
